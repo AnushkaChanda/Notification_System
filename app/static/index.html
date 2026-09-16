@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Notify — 1M/day system</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg2: #121a32;
+      --card: #161f3a;
+      --line: #2a355c;
+      --text: #eef2ff;
+      --muted: #9aa6c8;
+      --accent: #6ee7b7;
+      --accent2: #93c5fd;
+      --warn: #fbbf24;
+      --bad: #fb7185;
+      --ok: #34d399;
+      --skip: #c4b5fd;
+      --radius: 16px;
+      --shadow: 0 18px 50px rgba(0,0,0,.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+      background:
+        radial-gradient(1200px 500px at 10% -10%, #1d3a6a 0%, transparent 50%),
+        radial-gradient(900px 400px at 100% 0%, #134e4a 0%, transparent 45%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    a { color: var(--accent2); }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.25rem 1.5rem 0;
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+    .brand { display: flex; align-items: center; gap: .8rem; }
+    .logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: linear-gradient(135deg, #34d399, #60a5fa);
+      display: grid; place-items: center; font-weight: 800; color: #062016;
+    }
+    h1 { font-size: 1.15rem; margin: 0; }
+    .sub { color: var(--muted); font-size: .85rem; margin: .15rem 0 0; }
+    .live {
+      display: flex; align-items: center; gap: .45rem;
+      background: #10233a; border: 1px solid var(--line);
+      padding: .35rem .7rem; border-radius: 999px; font-size: .8rem; color: var(--muted);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+    main { max-width: 1180px; margin: 0 auto; padding: 1.25rem 1.5rem 3rem; }
+    .explain {
+      background: linear-gradient(180deg, #1a2448, #141c38);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.2rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1rem;
+    }
+    .explain h2 { margin: 0 0 .4rem; font-size: 1rem; }
+    .explain p { margin: 0; color: var(--muted); font-size: .92rem; }
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: .4rem;
+      margin-top: 1rem;
+      align-items: center;
+    }
+    .step {
+      background: var(--bg2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: .55rem .4rem;
+      text-align: center;
+      font-size: .78rem;
+    }
+    .step b { display: block; font-size: .72rem; color: var(--accent); margin-bottom: .15rem; }
+    .arrow { text-align: center; color: var(--muted); font-size: 1.1rem; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: .75rem;
+      margin: 1rem 0;
+    }
+    .stat {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: .85rem 1rem;
+    }
+    .stat span { color: var(--muted); font-size: .75rem; }
+    .stat strong { display: block; font-size: 1.45rem; margin-top: .2rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1.1rem;
+      box-shadow: var(--shadow);
+    }
+    .card h3 { margin: 0 0 .85rem; font-size: 1rem; }
+    .scenarios { display: flex; flex-wrap: wrap; gap: .45rem; margin-bottom: .9rem; }
+    .chip {
+      border: 1px solid var(--line);
+      background: #10182f;
+      color: var(--text);
+      border-radius: 999px;
+      padding: .35rem .7rem;
+      font-size: .78rem;
+      cursor: pointer;
+    }
+    .chip:hover, .chip.active { border-color: var(--accent); color: var(--accent); }
+    label { display: block; color: var(--muted); font-size: .78rem; margin: .55rem 0 .25rem; }
+    select, button {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #0f1730;
+      color: var(--text);
+      padding: .55rem .6rem;
+      font: inherit;
+    }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
+    button.primary {
+      margin-top: .95rem;
+      background: linear-gradient(135deg, #34d399, #22d3ee);
+      color: #042018;
+      border: 0;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.primary:disabled { opacity: .6; cursor: wait; }
+    .result {
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: .9rem;
+      min-height: 120px;
+      background: #0f1730;
+    }
+    .pill {
+      display: inline-block;
+      padding: .15rem .5rem;
+      border-radius: 999px;
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .sent { background: #064e3b; color: #6ee7b7; }
+    .queued, .sending { background: #1e3a8a; color: #93c5fd; }
+    .skipped { background: #3b0764; color: #e9d5ff; }
+    .failed { background: #7f1d1d; color: #fecaca; }
+    .feed { display: flex; flex-direction: column; gap: .55rem; max-height: 420px; overflow: auto; }
+    .item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: .35rem;
+      padding: .7rem .75rem;
+      background: #10182f;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+    .item small { color: var(--muted); }
+    .hint { color: var(--muted); font-size: .82rem; margin: .4rem 0 0; }
+    @media (max-width: 900px) {
+      .grid, .stats, .row, .pipeline { grid-template-columns: 1fr; }
+      .arrow { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">N</div>
+      <div>
+        <h1>Notify</h1>
+        <p class="sub">Assignment: 1 million notifications / day</p>
+      </div>
+    </div>
+    <div class="live"><span class="dot"></span> Local mode · SQLite workers</div>
+  </header>
+
+  <main>
+    <section class="explain">
+      <h2>What this is</h2>
+      <p>
+        The company asked for a <b>notification service</b>, not a social app.
+        Other systems call us when something happens (order shipped, OTP, promo).
+        We accept the job instantly, queue it, then a worker delivers it —
+        so a slow email provider never blocks the product.
+      </p>
+      <div class="pipeline">
+        <div class="step"><b>1. Event</b>Order / OTP</div>
+        <div class="arrow">→</div>
+        <div class="step"><b>2. API</b>Validate + 202</div>
+        <div class="arrow">→</div>
+        <div class="step"><b>3. Queue</b>Buffer spikes</div>
+        <div class="arrow">→</div>
+        <div class="step"><b>4. Worker</b>Send channel</div>
+      </div>
+    </section>
+
+    <section class="stats">
+      <div class="stat"><span>Enqueued</span><strong id="m-enqueued">0</strong></div>
+      <div class="stat"><span>Sent</span><strong id="m-sent">0</strong></div>
+      <div class="stat"><span>Skipped (opt-out)</span><strong id="m-skipped">0</strong></div>
+      <div class="stat"><span>Failed / DLQ</span><strong id="m-dlq">0</strong></div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h3>Send a notification</h3>
+        <div class="scenarios">
+          <button class="chip active" type="button" data-s="happy">Order shipped</button>
+          <button class="chip" type="button" data-s="otp">OTP (critical)</button>
+          <button class="chip" type="button" data-s="optout">Marketing opt-out</button>
+          <button class="chip" type="button" data-s="fail">Provider failure</button>
+        </div>
+        <form id="form">
+          <div class="row">
+            <div>
+              <label>User</label>
+              <select name="user_id">
+                <option value="42">42 — everything on</option>
+                <option value="7">7 — marketing email off</option>
+                <option value="fail">fail — provider rejects</option>
+              </select>
+            </div>
+            <div>
+              <label>Channel</label>
+              <select name="channel">
+                <option value="inapp">In-app inbox</option>
+                <option value="email">Email (mock)</option>
+                <option value="sms">SMS (mock)</option>
+                <option value="push">Push (mock)</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>Category</label>
+              <select name="category">
+                <option value="transactional">transactional</option>
+                <option value="otp">otp</option>
+                <option value="social">social</option>
+                <option value="marketing">marketing</option>
+              </select>
+            </div>
+            <div>
+              <label>Priority</label>
+              <select name="priority">
+                <option value="normal">normal</option>
+                <option value="critical">critical</option>
+                <option value="marketing">marketing</option>
+              </select>
+            </div>
+          </div>
+          <label>Template</label>
+          <select name="template_code">
+            <option value="ORDER_SHIPPED">ORDER_SHIPPED</option>
+            <option value="OTP">OTP</option>
+            <option value="PROMO">PROMO</option>
+            <option value="COMMENT">COMMENT</option>
+          </select>
+          <p class="hint" id="hint">Happy path: user 42, in-app, should become <b>sent</b>.</p>
+          <button class="primary" type="submit">Enqueue (don’t wait on provider)</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Last result</h3>
+        <div class="result" id="result">
+          <p class="hint">Nothing sent yet. Try “Order shipped”.</p>
+        </div>
+        <h3 style="margin-top:1.1rem">Recent activity</h3>
+        <div class="feed" id="feed"><p class="hint">Loading…</p></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API_KEY = "dev-key";
+    const headers = { "Content-Type": "application/json", "X-API-Key": API_KEY };
+    const form = document.getElementById("form");
+    const hint = document.getElementById("hint");
+    const result = document.getElementById("result");
+
+    const scenarios = {
+      happy: {
+        user_id: "42", channel: "inapp", category: "transactional",
+        priority: "normal", template_code: "ORDER_SHIPPED",
+        hint: "Happy path: queued then sent to the in-app inbox."
+      },
+      otp: {
+        user_id: "42", channel: "sms", category: "otp",
+        priority: "critical", template_code: "OTP",
+        hint: "Critical path: OTP uses the high-priority queue (SMS is mocked)."
+      },
+      optout: {
+        user_id: "7", channel: "email", category: "marketing",
+        priority: "marketing", template_code: "PROMO",
+        hint: "User 7 opted out of marketing email → status skipped. That is success."
+      },
+      fail: {
+        user_id: "fail", channel: "email", category: "transactional",
+        priority: "normal", template_code: "ORDER_SHIPPED",
+        hint: "Provider rejects this user → failed / dead-letter."
+      }
+    };
+
+    function applyScenario(key) {
+      const s = scenarios[key];
+      Object.keys(s).forEach((k) => {
+        if (form[k]) form[k].value = s[k];
+      });
+      hint.innerHTML = s.hint;
+      document.querySelectorAll(".chip").forEach((c) => c.classList.toggle("active", c.dataset.s === key));
+    }
+
+    document.querySelectorAll(".chip").forEach((btn) => {
+      btn.addEventListener("click", () => applyScenario(btn.dataset.s));
+    });
+
+    function pill(status) {
+      return `<span class="pill ${status}">${status}</span>`;
+    }
+
+    function renderResult(row) {
+      if (!row || row.detail) {
+        result.innerHTML = `<pre style="white-space:pre-wrap">${JSON.stringify(row, null, 2)}</pre>`;
+        return;
+      }
+      result.innerHTML = `
+        <div>${pill(row.status)} <b>${row.channel}</b> · ${row.template_code}</div>
+        <p class="hint">User ${row.user_id} · ${row.category} · ${row.priority}</p>
+        ${row.skip_reason ? `<p class="hint">Skip reason: ${row.skip_reason}</p>` : ""}
+        ${row.last_error ? `<p class="hint">Error: ${row.last_error}</p>` : ""}
+        <p class="hint">id ${row.id}</p>
+      `;
+    }
+
+    async function pollStatus(id) {
+      for (let i = 0; i < 20; i++) {
+        const res = await fetch("/v1/notifications/" + id, { headers });
+        const row = await res.json();
+        renderResult(row);
+        if (["sent", "skipped", "failed"].includes(row.status)) return;
+        await new Promise((r) => setTimeout(r, 250));
+      }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector("button.primary");
+      btn.disabled = true;
+      const payload = {
+        user_name: "Anushka",
+        order_id: "991",
+        code: "123456",
+        headline: "Weekend sale",
+        text: "Nice work",
+        invalid_destination: form.user_id.value === "fail"
+      };
+      const body = {
+        idempotency_key: crypto.randomUUID(),
+        user_id: form.user_id.value,
+        channel: form.channel.value,
+        category: form.category.value,
+        priority: form.priority.value,
+        template_code: form.template_code.value,
+        payload
+      };
+      result.innerHTML = `<p class="hint">API accepted the job. Worker is sending…</p>`;
+      try {
+        const res = await fetch("/v1/notifications", {
+          method: "POST", headers, body: JSON.stringify(body)
+        });
+        const created = await res.json();
+        if (!res.ok) {
+          renderResult(created);
+          return;
+        }
+        await pollStatus(created.notification_id);
+        await refresh();
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    async function refresh() {
+      const [metricsRes, feedRes] = await Promise.all([
+        fetch("/metrics"),
+        fetch("/v1/activity?limit=12", { headers })
+      ]);
+      const metrics = await metricsRes.json();
+      const c = metrics.counters || {};
+      document.getElementById("m-enqueued").textContent = c.enqueued || 0;
+      document.getElementById("m-sent").textContent = c.sent || 0;
+      document.getElementById("m-skipped").textContent = c.skipped || 0;
+      document.getElementById("m-dlq").textContent = c.dlq || 0;
+      const items = await feedRes.json();
+      const feed = document.getElementById("feed");
+      if (!Array.isArray(items) || !items.length) {
+        feed.innerHTML = `<p class="hint">No notifications yet.</p>`;
+        return;
+      }
+      feed.innerHTML = items.map((n) => `
+        <div class="item">
+          <div>
+            <div><b>${n.template_code}</b> → ${n.channel} · user ${n.user_id}</div>
+            <small>${n.skip_reason || n.last_error || n.category}</small>
+          </div>
+          ${pill(n.status)}
+        </div>
+      `).join("");
+    }
+
+    applyScenario("happy");
+    refresh();
+    setInterval(refresh, 4000);
+  </script>
+</body>
+</html>
